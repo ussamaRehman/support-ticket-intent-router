@@ -1,6 +1,7 @@
 # Ticket Router (Intent Classification) API
 
 Phase 1 delivers a baseline intent classifier with FastAPI endpoints, training, and evaluation artifacts.
+Training uses the Banking77 dataset (PolyAI task-specific-datasets, CC BY 4.0). The first `make train` run will download and cache it in `data/banking77/`.
 
 ## Quickstart
 ```bash
