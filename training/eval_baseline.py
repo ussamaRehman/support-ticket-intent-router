@@ -6,7 +6,7 @@ import joblib
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
-from training.data import load_sample_split
+from training.data import load_banking77_split
 
 DEFAULT_MODEL_DIR = Path("artifacts") / "model_0.1.0"
 DEFAULT_REPORT_DIR = Path("reports")
@@ -29,13 +29,12 @@ def main() -> None:
         raw_map: Dict[str, str] = json.load(handle)
     label_map = {int(key): value for key, value in raw_map.items()}
     labels = [label_map[idx] for idx in sorted(label_map.keys())]
-    label_to_id = {label: idx for idx, label in label_map.items()}
 
-    X_train, X_test, y_train, y_test = load_sample_split(random_state=42)
+    _X_train, _y_train, X_test, y_test, _label_names = load_banking77_split(seed=42)
     X_test_vec = vectorizer.transform(X_test)
     y_pred = model.predict(X_test_vec)
     y_proba = model.predict_proba(X_test_vec)
-    y_test_ids = [label_to_id[label] for label in y_test]
+    y_test_ids = y_test
 
     report = classification_report(
         y_test_ids,

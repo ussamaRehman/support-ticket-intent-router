@@ -2,9 +2,11 @@ __pycache__/
 *.pyc
 .venv/
 .egg-info/
+*.egg-info/
 artifacts/
 reports/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
 .env
+data/

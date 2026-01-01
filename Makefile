@@ -22,10 +22,10 @@ serve:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 test:
-	pytest -q
+	uv run pytest -q
 
 lint:
-	ruff check .
+	uv run ruff check .
 
 format:
-	ruff format .
+	uv run ruff format .
