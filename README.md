@@ -47,3 +47,19 @@ curl -X POST http://localhost:8000/predict_batch \
 - `make test`: run tests.
 - `make lint`: run ruff checks.
 - `make format`: format with ruff.
+
+## Docker
+Build and run the API container:
+```bash
+docker build -t ticket-router:dev .
+docker run -p 8000:8000 ticket-router:dev
+curl http://localhost:8000/health
+```
+
+To mount local artifacts and set `MODEL_DIR`:
+```bash
+docker run -p 8000:8000 \
+  -e MODEL_DIR=/artifacts/model_0.1.0 \
+  -v "$(pwd)/artifacts:/artifacts" \
+  ticket-router:dev
+```

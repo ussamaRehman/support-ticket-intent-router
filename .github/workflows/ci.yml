@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --dev
+      - run: make lint
+      - run: make test
+      - run: docker build -t ticket-router:dev .
+      - name: Smoke test
+        run: |
+          docker run -d --name ticket-router -p 8000:8000 ticket-router:dev
+          sleep 2
+          curl -s http://localhost:8000/health | grep -q '"status":"ok"'
+          docker rm -f ticket-router

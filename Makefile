@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pip install-dev-pip train eval serve test lint format
+.PHONY: install install-dev install-pip install-dev-pip train eval serve test lint format docker-build docker-run
 
 install:
 	uv sync
@@ -29,3 +29,9 @@ lint:
 
 format:
 	uv run ruff format .
+
+docker-build:
+	docker build -t ticket-router:dev .
+
+docker-run:
+	docker run -p 8000:8000 ticket-router:dev
