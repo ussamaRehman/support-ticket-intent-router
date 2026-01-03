@@ -28,14 +28,14 @@ curl http://localhost:8000/health
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"text": "I need help with my invoice", "top_k": 3}'
+  -d '{"text": "I need help with my invoice", "top_k": 3, "min_confidence": 0.55}'
 ```
 
 ### Predict (batch)
 ```bash
 curl -X POST http://localhost:8000/predict_batch \
   -H "Content-Type: application/json" \
-  -d '{"items": [{"id": "1", "text": "Reset my password"}, {"id": "2", "text": "Refund this charge"}], "top_k": 3}'
+  -d '{"items": [{"id": "1", "text": "Reset my password"}, {"id": "2", "text": "Refund this charge"}], "top_k": 3, "min_confidence": 0.55}'
 ```
 
 ## Make targets

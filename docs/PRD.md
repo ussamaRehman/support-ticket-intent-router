@@ -74,7 +74,8 @@
 - Requests return `503` when the model is not loaded.
 
 ### Phase 2
-- Add confidence/threshold guardrails and `needs_human` signals.
+- Add confidence/threshold guardrails with `min_confidence` inputs and `needs_human` outputs.
+- When confidence is below threshold, return `label=human_review` and `needs_human=true`.
 
 ### Phase 3
 - Add Docker and CI with smoke tests.
