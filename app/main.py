@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
@@ -14,20 +15,21 @@ from app.services.predictor import Predictor
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Ticket Router")
-
 predictor = Predictor()
 settings = get_settings()
 
 
-@app.on_event("startup")
-def load_model_on_startup() -> None:
-    if not settings.MODEL_DIR:
-        return
-    try:
-        predictor.load(settings.MODEL_DIR)
-    except Exception:
-        logger.exception("Failed to load model from MODEL_DIR")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.MODEL_DIR:
+        try:
+            predictor.load(settings.MODEL_DIR)
+        except Exception:
+            logger.exception("Failed to load model from MODEL_DIR")
+    yield
+
+
+app = FastAPI(title="Ticket Router", lifespan=lifespan)
 
 
 @app.get("/health", response_model=HealthResponse)
