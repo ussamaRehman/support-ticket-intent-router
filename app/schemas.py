@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 class PredictRequest(BaseModel):
     text: str = Field(min_length=1)
     top_k: int = Field(default=3, ge=1, le=10)
+    min_confidence: float = Field(default=0.55, ge=0.0, le=1.0)
 
     @field_validator("text")
     @classmethod
@@ -32,6 +33,7 @@ class PredictBatchItem(BaseModel):
 class PredictBatchRequest(BaseModel):
     items: List[PredictBatchItem] = Field(min_length=1)
     top_k: int = Field(default=3, ge=1, le=10)
+    min_confidence: float = Field(default=0.55, ge=0.0, le=1.0)
 
 class AlternativePrediction(BaseModel):
     label: str
@@ -42,12 +44,14 @@ class PredictResponse(BaseModel):
     label: str
     confidence: float
     alternatives: List[AlternativePrediction]
+    needs_human: bool
 
 
 class PredictBatchItemResponse(BaseModel):
     id: str
     label: str
     confidence: float
+    needs_human: bool
 
 
 class PredictBatchResponse(BaseModel):

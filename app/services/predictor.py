@@ -39,7 +39,9 @@ class Predictor:
         self._bundle = ModelBundle(model=model, vectorizer=vectorizer, label_map=label_map)
         self.model_dir = str(model_path)
 
-    def predict(self, texts: List[str], top_k: int = 3) -> List[Dict[str, object]]:
+    def predict(
+        self, texts: List[str], top_k: int = 3, min_confidence: float = 0.55
+    ) -> List[Dict[str, object]]:
         if not self._bundle:
             raise RuntimeError("Model not loaded")
         vectorizer = self._bundle.vectorizer
@@ -59,11 +61,16 @@ class Predictor:
                 }
                 for idx in top_indices
             ]
+            top_label = alternatives[0]["label"]
+            top_confidence = alternatives[0]["confidence"]
+            needs_human = top_confidence < min_confidence
+            label = "human_review" if needs_human else top_label
             results.append(
                 {
-                    "label": alternatives[0]["label"],
-                    "confidence": alternatives[0]["confidence"],
+                    "label": label,
+                    "confidence": top_confidence,
                     "alternatives": alternatives,
+                    "needs_human": needs_human,
                 }
             )
         return results

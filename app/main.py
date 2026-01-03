@@ -44,7 +44,11 @@ def health() -> HealthResponse:
 def predict(request: PredictRequest) -> PredictResponse:
     if not predictor.loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    result = predictor.predict([request.text], top_k=request.top_k)[0]
+    result = predictor.predict(
+        [request.text],
+        top_k=request.top_k,
+        min_confidence=request.min_confidence,
+    )[0]
     return PredictResponse(**result)
 
 
@@ -57,9 +61,18 @@ def predict_batch(request: PredictBatchRequest) -> PredictBatchResponse:
     if not predictor.loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
     texts = [item.text for item in request.items]
-    results = predictor.predict(texts, top_k=request.top_k)
+    results = predictor.predict(
+        texts,
+        top_k=request.top_k,
+        min_confidence=request.min_confidence,
+    )
     items = [
-        {"id": item.id, "label": result["label"], "confidence": result["confidence"]}
+        {
+            "id": item.id,
+            "label": result["label"],
+            "confidence": result["confidence"],
+            "needs_human": result["needs_human"],
+        }
         for item, result in zip(request.items, results)
     ]
     return PredictBatchResponse(items=items, model_version=predictor.model_version)
