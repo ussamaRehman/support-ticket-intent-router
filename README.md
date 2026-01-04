@@ -63,3 +63,17 @@ docker run -p 8000:8000 \
   -v "$(pwd)/artifacts:/artifacts" \
   ticket-router:dev
 ```
+
+Health check expectations:
+```bash
+docker run -d --name ticket-router -p 8000:8000 ticket-router:dev
+curl http://localhost:8000/health  # model_loaded=false
+docker rm -f ticket-router
+
+docker run -d --name ticket-router -p 8000:8000 \
+  -e MODEL_DIR=/artifacts/model_0.1.0 \
+  -v "$(pwd)/artifacts:/artifacts" \
+  ticket-router:dev
+curl http://localhost:8000/health  # model_loaded=true
+docker rm -f ticket-router
+```
