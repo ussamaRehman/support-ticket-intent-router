@@ -82,6 +82,7 @@
 
 ### Phase 4
 - Add structured logs and audit trail.
+- Logs must include request_id, timestamp, model_version, and decision fields.
 
 ### Phase 5 (optional)
 - Add monitoring hooks and registry-lite improvements.

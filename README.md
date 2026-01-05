@@ -89,3 +89,9 @@ docker rm -f ticket-router
 make docker-build
 make docker-smoke
 ```
+
+## Logging
+Logs are emitted as JSON lines to stdout. Example:
+```json
+{"event":"prediction","timestamp":"2025-01-01T12:00:00+00:00","request_id":"req-123","model_version":"0.1.0","model_dir":"artifacts/model_0.1.0","min_confidence":0.55,"top_k":3,"label":"billing","confidence":0.91,"needs_human":false}
+```
