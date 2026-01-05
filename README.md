@@ -89,6 +89,9 @@ docker rm -f ticket-router
 make docker-build
 make docker-smoke
 ```
+Notes:
+- Docker Desktop must be running.
+- `make docker-smoke` will try ports 8000–8004; free them with `lsof -i:8000 -sTCP:LISTEN` (or pick another port if needed).
 
 ## Logging
 Logs are emitted as JSON lines to stdout. Example:
