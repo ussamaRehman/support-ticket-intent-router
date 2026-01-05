@@ -47,6 +47,12 @@ curl -X POST http://localhost:8000/predict_batch \
 - `make test`: run tests.
 - `make lint`: run ruff checks.
 - `make format`: format with ruff.
+- `make ci`: run lint and tests.
+
+## Quality
+```bash
+make ci
+```
 
 ## Docker
 Build and run the API container:
@@ -76,4 +82,10 @@ docker run -d --name ticket-router -p 8000:8000 \
   ticket-router:dev
 curl http://localhost:8000/health  # model_loaded=true
 docker rm -f ticket-router
+```
+
+## Docker smoke
+```bash
+make docker-build
+make docker-smoke
 ```
