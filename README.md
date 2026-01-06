@@ -93,6 +93,16 @@ Notes:
 - Docker Desktop must be running.
 - `make docker-smoke` will try ports 8000–8004; free them with `lsof -i:8000 -sTCP:LISTEN` (or pick another port if needed).
 
+## Run Docker with a model
+```bash
+make train
+make docker-build
+make docker-run-model
+make docker-smoke-model
+```
+Notes:
+- Mounts local `./artifacts` read-only and uses ports 8000–8004.
+
 ## Logging
 Logs are emitted as JSON lines to stdout. Example:
 ```json
