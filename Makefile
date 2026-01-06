@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pip install-dev-pip train eval serve test lint format ci docker-build docker-run docker-smoke
+.PHONY: install install-dev install-pip install-dev-pip train eval serve test lint format ci docker-build docker-run docker-smoke docker-run-model docker-smoke-model
 
 install:
 	uv sync
@@ -43,9 +43,10 @@ docker-run:
 docker-smoke:
 	@set -e; \
 	PORT=""; \
-	if command -v lsof >/dev/null 2>&1; then \
+	LSOF="$$(command -v lsof 2>/dev/null || echo /usr/sbin/lsof)"; \
+	if [ -x "$$LSOF" ]; then \
 		for candidate in 8000 8001 8002 8003 8004; do \
-			if ! lsof -i:$$candidate -sTCP:LISTEN >/dev/null 2>&1; then \
+			if ! $$LSOF -i:$$candidate -sTCP:LISTEN >/dev/null 2>&1; then \
 				PORT=$$candidate; \
 				break; \
 			fi; \
@@ -94,5 +95,125 @@ docker-smoke:
 		echo "Last health response: $$last_health"; \
 	fi; \
 	echo "Smoke test failed; container logs:"; \
+	docker logs $$CID; \
+	exit 1
+
+docker-run-model:
+	@set -e; \
+	PORT=""; \
+	LSOF="$$(command -v lsof 2>/dev/null || echo /usr/sbin/lsof)"; \
+	if [ -x "$$LSOF" ]; then \
+		for candidate in 8000 8001 8002 8003 8004; do \
+			if ! $$LSOF -i:$$candidate -sTCP:LISTEN >/dev/null 2>&1; then \
+				PORT=$$candidate; \
+				break; \
+			fi; \
+		done; \
+	else \
+		PORT=8000; \
+	fi; \
+	if [ -z "$$PORT" ]; then \
+		echo "No free port found in 8000-8004. Stop the service using those ports and retry."; \
+		exit 1; \
+	fi; \
+	echo "Starting container on port $$PORT"; \
+	CID="$$(docker run -d -p $$PORT:8000 -e MODEL_DIR=/app/artifacts/model_0.1.0 -v $(PWD)/artifacts:/app/artifacts:ro ticket-router:dev)"; \
+	echo "Container ID: $$CID"; \
+	trap 'docker rm -f $$CID >/dev/null 2>&1' EXIT; \
+	attempt=1; \
+	last_health=""; \
+	for wait in 1 1 2 2 3 3 4 4; do \
+		echo "Attempt $$attempt (sleep $$wait)s"; \
+		curl_err="$$(mktemp)"; \
+		set +e; \
+		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/health 2>$$curl_err)"; \
+		code="$$?"; \
+		set -e; \
+		last_health="$$health"; \
+		if [ -n "$$health" ]; then \
+			echo "$$health"; \
+			rm -f "$$curl_err"; \
+			exit 0; \
+		fi; \
+		if [ -s "$$curl_err" ]; then \
+			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+		else \
+			echo "curl exit code $$code (no response yet)"; \
+		fi; \
+		rm -f "$$curl_err"; \
+		if ! docker ps -q --no-trunc | grep -q "$$CID"; then \
+			echo "Docker run with model failed; container exited early:"; \
+			docker logs $$CID; \
+			exit 1; \
+		fi; \
+		sleep $$wait; \
+		attempt=$$((attempt+1)); \
+	done; \
+	if [ -n "$$last_health" ]; then \
+		echo "Last health response: $$last_health"; \
+	fi; \
+	echo "Docker run with model failed; container logs:"; \
+	docker logs $$CID; \
+	exit 1
+
+docker-smoke-model:
+	@set -e; \
+	PORT=""; \
+	if command -v lsof >/dev/null 2>&1; then \
+		for candidate in 8000 8001 8002 8003 8004; do \
+			if ! lsof -i:$$candidate -sTCP:LISTEN >/dev/null 2>&1; then \
+				PORT=$$candidate; \
+				break; \
+			fi; \
+		done; \
+	else \
+		PORT=8000; \
+	fi; \
+	if [ -z "$$PORT" ]; then \
+		echo "No free port found in 8000-8004. Stop the service using those ports and retry."; \
+		exit 1; \
+	fi; \
+	echo "Starting container on port $$PORT"; \
+	CID="$$(docker run -d -p $$PORT:8000 -e MODEL_DIR=/app/artifacts/model_0.1.0 -v $(PWD)/artifacts:/app/artifacts:ro ticket-router:dev)"; \
+	echo "Container ID: $$CID"; \
+	trap 'docker rm -f $$CID >/dev/null 2>&1' EXIT; \
+	attempt=1; \
+	last_health=""; \
+	for wait in 1 1 2 2 3 3 4 4; do \
+		echo "Attempt $$attempt (sleep $$wait)s"; \
+		curl_err="$$(mktemp)"; \
+		set +e; \
+		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/health 2>$$curl_err)"; \
+		code="$$?"; \
+		set -e; \
+		last_health="$$health"; \
+		if [ -n "$$health" ]; then \
+			echo "$$health"; \
+			rm -f "$$curl_err"; \
+			if echo "$$health" | grep -Eq '"model_loaded":[[:space:]]*true'; then \
+				exit 0; \
+			fi; \
+			echo "model_loaded is false; failing smoke test."; \
+			docker logs $$CID; \
+			exit 1; \
+		fi; \
+		if [ -s "$$curl_err" ]; then \
+			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+		else \
+			echo "curl exit code $$code (no response yet)"; \
+		fi; \
+		rm -f "$$curl_err"; \
+		if ! docker ps -q --no-trunc | grep -q "$$CID"; then \
+			echo "Docker smoke model failed; container exited early:"; \
+			docker logs $$CID; \
+			exit 1; \
+		fi; \
+		sleep $$wait; \
+		attempt=$$((attempt+1)); \
+	done; \
+	if [ -n "$$last_health" ]; then \
+		echo "Last health response: $$last_health"; \
+	fi; \
+	echo "Docker smoke model failed; container logs:"; \
 	docker logs $$CID; \
 	exit 1
