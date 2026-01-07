@@ -35,6 +35,7 @@ class PredictBatchRequest(BaseModel):
     top_k: int = Field(default=3, ge=1, le=10)
     min_confidence: float = Field(default=0.55, ge=0.0, le=1.0)
 
+
 class AlternativePrediction(BaseModel):
     label: str
     confidence: float

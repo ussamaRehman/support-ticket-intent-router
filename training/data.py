@@ -104,7 +104,7 @@ def _load_csv(path: Path) -> Tuple[List[str], List[str]]:
     with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.reader(
             handle,
-            quotechar="\"",
+            quotechar='"',
             delimiter=",",
             quoting=csv.QUOTE_ALL,
             skipinitialspace=True,
