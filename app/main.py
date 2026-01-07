@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.schemas import (
@@ -71,6 +72,24 @@ def health() -> HealthResponse:
         model_dir=predictor.model_dir,
         model_version=predictor.model_version,
     )
+
+
+@app.get("/ready")
+def ready() -> JSONResponse:
+    model_loaded = predictor.loaded
+    ready_state = True
+    status_code = 200
+    if settings.MODEL_DIR and not model_loaded:
+        ready_state = False
+        status_code = 503
+    payload = {
+        "status": "ok",
+        "ready": ready_state,
+        "model_loaded": model_loaded,
+        "model_dir": predictor.model_dir,
+        "model_version": predictor.model_version,
+    }
+    return JSONResponse(content=payload, status_code=status_code)
 
 
 @app.post("/predict", response_model=PredictResponse)

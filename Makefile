@@ -68,14 +68,17 @@ docker-smoke:
 		echo "Attempt $$attempt (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/health 2>$$curl_err)"; \
+		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
 		if [ -n "$$health" ]; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			exit 0; \
+			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
+				exit 0; \
+			fi; \
+			echo "ready is false; retrying."; \
 		fi; \
 		if [ -s "$$curl_err" ]; then \
 			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
@@ -126,14 +129,17 @@ docker-run-model:
 		echo "Attempt $$attempt (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/health 2>$$curl_err)"; \
+		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
 		if [ -n "$$health" ]; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			exit 0; \
+			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
+				exit 0; \
+			fi; \
+			echo "ready is false; retrying."; \
 		fi; \
 		if [ -s "$$curl_err" ]; then \
 			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
@@ -183,19 +189,17 @@ docker-smoke-model:
 		echo "Attempt $$attempt (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/health 2>$$curl_err)"; \
+		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
 		if [ -n "$$health" ]; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			if echo "$$health" | grep -Eq '"model_loaded":[[:space:]]*true'; then \
+			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true' && echo "$$health" | grep -Eq '"model_loaded":[[:space:]]*true'; then \
 				exit 0; \
 			fi; \
-			echo "model_loaded is false; failing smoke test."; \
-			docker logs $$CID; \
-			exit 1; \
+			echo "ready/model_loaded not true yet; retrying."; \
 		fi; \
 		if [ -s "$$curl_err" ]; then \
 			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
