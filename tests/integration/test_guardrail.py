@@ -68,3 +68,37 @@ def test_predict_batch_guardrail(monkeypatch: pytest.MonkeyPatch) -> None:
             assert item["label"] == "human_review"
             assert item["needs_human"] is True
             assert isinstance(item["confidence"], float)
+
+
+def test_ready_without_model_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MODEL_DIR", raising=False)
+    from app import main as main_module
+
+    importlib.reload(main_module)
+    with TestClient(main_module.app) as client:
+        response = client.get("/ready")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["ready"] is True
+        assert body["model_loaded"] is False
+
+
+def test_ready_with_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    with _client_with_model(monkeypatch) as client:
+        response = client.get("/ready")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["ready"] is True
+        assert body["model_loaded"] is True
+
+
+def test_ready_with_missing_model_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MODEL_DIR", "artifacts/missing_model")
+    from app import main as main_module
+
+    importlib.reload(main_module)
+    with TestClient(main_module.app) as client:
+        response = client.get("/ready")
+        assert response.status_code == 503
+        body = response.json()
+        assert body["ready"] is False

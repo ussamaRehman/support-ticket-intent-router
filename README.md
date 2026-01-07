@@ -13,6 +13,37 @@ make eval
 MODEL_DIR=artifacts/model_0.1.0 make serve
 ```
 
+## Quick API Demo
+Local:
+```bash
+make ci
+make serve
+curl http://localhost:8000/ready
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "I need help with my invoice", "top_k": 3, "min_confidence": 0.55}'
+```
+
+Docker:
+```bash
+make docker-build
+make docker-smoke
+curl http://localhost:8000/ready
+```
+
+Docker with model:
+```bash
+make docker-smoke-model
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "I need help with my invoice", "top_k": 3, "min_confidence": 0.55}'
+```
+
+Troubleshooting:
+- Docker Desktop must be running.
+- Cold-start curl failures can happen on attempt 1; the smoke targets retry automatically.
+- Ports 8000–8004 are used; free them with `lsof -i:8000 -sTCP:LISTEN`.
+
 ## Pip fallback (compatibility only)
 ```bash
 pip install -e ".[dev]"
