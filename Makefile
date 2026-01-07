@@ -64,33 +64,36 @@ docker-smoke:
 	trap 'docker rm -f $$CID >/dev/null 2>&1' EXIT; \
 	attempt=1; \
 	last_health=""; \
-	for wait in 1 1 2 2 3 3 4 4; do \
-		echo "Attempt $$attempt (sleep $$wait)s"; \
+	steps="1 1 2 2 3 3 4 4"; \
+	total=$$(echo "$$steps" | wc -w | tr -d ' '); \
+	for wait in $$steps; do \
+		echo "Attempt $$attempt: not ready yet (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
+		health="$$(curl --fail --silent --show-error --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
-		if [ -n "$$health" ]; then \
+		if [ -n "$$health" ] && echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
-				exit 0; \
-			fi; \
-			echo "ready is false; retrying."; \
+			exit 0; \
 		fi; \
-		if [ -s "$$curl_err" ]; then \
-			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
-		else \
-			echo "curl exit code $$code (no response yet)"; \
-		fi; \
-		rm -f "$$curl_err"; \
 		if ! docker ps -q --no-trunc | grep -q "$$CID"; then \
 			echo "Smoke test failed; container exited early:"; \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
 			docker logs $$CID; \
+			rm -f "$$curl_err"; \
 			exit 1; \
 		fi; \
+		if [ $$attempt -eq $$total ]; then \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
+		fi; \
+		rm -f "$$curl_err"; \
 		sleep $$wait; \
 		attempt=$$((attempt+1)); \
 	done; \
@@ -125,33 +128,36 @@ docker-run-model:
 	trap 'docker rm -f $$CID >/dev/null 2>&1' EXIT; \
 	attempt=1; \
 	last_health=""; \
-	for wait in 1 1 2 2 3 3 4 4; do \
-		echo "Attempt $$attempt (sleep $$wait)s"; \
+	steps="1 1 2 2 3 3 4 4"; \
+	total=$$(echo "$$steps" | wc -w | tr -d ' '); \
+	for wait in $$steps; do \
+		echo "Attempt $$attempt: not ready yet (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
+		health="$$(curl --fail --silent --show-error --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
-		if [ -n "$$health" ]; then \
+		if [ -n "$$health" ] && echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true'; then \
-				exit 0; \
-			fi; \
-			echo "ready is false; retrying."; \
+			exit 0; \
 		fi; \
-		if [ -s "$$curl_err" ]; then \
-			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
-		else \
-			echo "curl exit code $$code (no response yet)"; \
-		fi; \
-		rm -f "$$curl_err"; \
 		if ! docker ps -q --no-trunc | grep -q "$$CID"; then \
 			echo "Docker run with model failed; container exited early:"; \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
 			docker logs $$CID; \
+			rm -f "$$curl_err"; \
 			exit 1; \
 		fi; \
+		if [ $$attempt -eq $$total ]; then \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
+		fi; \
+		rm -f "$$curl_err"; \
 		sleep $$wait; \
 		attempt=$$((attempt+1)); \
 	done; \
@@ -185,33 +191,36 @@ docker-smoke-model:
 	trap 'docker rm -f $$CID >/dev/null 2>&1' EXIT; \
 	attempt=1; \
 	last_health=""; \
-	for wait in 1 1 2 2 3 3 4 4; do \
-		echo "Attempt $$attempt (sleep $$wait)s"; \
+	steps="1 1 2 2 3 3 4 4"; \
+	total=$$(echo "$$steps" | wc -w | tr -d ' '); \
+	for wait in $$steps; do \
+		echo "Attempt $$attempt: not ready yet (sleep $$wait)s"; \
 		curl_err="$$(mktemp)"; \
 		set +e; \
-		health="$$(curl -sS --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
+		health="$$(curl --fail --silent --show-error --connect-timeout 2 --max-time 2 http://localhost:$$PORT/ready 2>$$curl_err)"; \
 		code="$$?"; \
 		set -e; \
 		last_health="$$health"; \
-		if [ -n "$$health" ]; then \
+		if [ -n "$$health" ] && echo "$$health" | grep -Eq '"ready":[[:space:]]*true' && echo "$$health" | grep -Eq '"model_loaded":[[:space:]]*true'; then \
 			echo "$$health"; \
 			rm -f "$$curl_err"; \
-			if echo "$$health" | grep -Eq '"ready":[[:space:]]*true' && echo "$$health" | grep -Eq '"model_loaded":[[:space:]]*true'; then \
-				exit 0; \
-			fi; \
-			echo "ready/model_loaded not true yet; retrying."; \
+			exit 0; \
 		fi; \
-		if [ -s "$$curl_err" ]; then \
-			echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
-		else \
-			echo "curl exit code $$code (no response yet)"; \
-		fi; \
-		rm -f "$$curl_err"; \
 		if ! docker ps -q --no-trunc | grep -q "$$CID"; then \
 			echo "Docker smoke model failed; container exited early:"; \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
 			docker logs $$CID; \
+			rm -f "$$curl_err"; \
 			exit 1; \
 		fi; \
+		if [ $$attempt -eq $$total ]; then \
+			if [ -s "$$curl_err" ]; then \
+				echo "curl exit code $$code: $$(cat $$curl_err | tr '\n' ' ')"; \
+			fi; \
+		fi; \
+		rm -f "$$curl_err"; \
 		sleep $$wait; \
 		attempt=$$((attempt+1)); \
 	done; \

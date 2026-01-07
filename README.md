@@ -92,6 +92,7 @@ make docker-smoke
 Notes:
 - Docker Desktop must be running.
 - `make docker-smoke` will try ports 8000–8004; free them with `lsof -i:8000 -sTCP:LISTEN` (or pick another port if needed).
+- It is normal to see an initial curl failure (for example, exit code 56) on cold start; the script retries automatically.
 
 ## Run Docker with a model
 ```bash
