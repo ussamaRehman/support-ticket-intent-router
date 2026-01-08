@@ -1,14 +1,10 @@
 import importlib
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 
-def _client_with_model(monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    model_dir = Path("artifacts") / "model_0.1.0"
-    if not (model_dir / "model.pkl").exists():
-        pytest.skip("Model artifacts not found; run make train first.")
+def _client_with_model(monkeypatch: pytest.MonkeyPatch, model_dir) -> TestClient:
     monkeypatch.setenv("MODEL_DIR", str(model_dir))
     from app import main as main_module
 
@@ -16,8 +12,8 @@ def _client_with_model(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     return TestClient(main_module.app)
 
 
-def test_predict_guardrail(monkeypatch: pytest.MonkeyPatch) -> None:
-    with _client_with_model(monkeypatch) as client:
+def test_predict_guardrail(monkeypatch: pytest.MonkeyPatch, model_dir) -> None:
+    with _client_with_model(monkeypatch, model_dir) as client:
         high_payload = {"text": "I need help with my invoice", "min_confidence": 0.99, "top_k": 3}
         high_resp = client.post("/predict", json=high_payload)
         assert high_resp.status_code == 200
@@ -50,8 +46,8 @@ def test_predict_min_confidence_bounds(monkeypatch: pytest.MonkeyPatch) -> None:
         assert high_resp.status_code == 422
 
 
-def test_predict_batch_guardrail(monkeypatch: pytest.MonkeyPatch) -> None:
-    with _client_with_model(monkeypatch) as client:
+def test_predict_batch_guardrail(monkeypatch: pytest.MonkeyPatch, model_dir) -> None:
+    with _client_with_model(monkeypatch, model_dir) as client:
         payload = {
             "items": [
                 {"id": "1", "text": "I need help with my invoice"},
@@ -83,8 +79,8 @@ def test_ready_without_model_dir(monkeypatch: pytest.MonkeyPatch) -> None:
         assert body["model_loaded"] is False
 
 
-def test_ready_with_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    with _client_with_model(monkeypatch) as client:
+def test_ready_with_model(monkeypatch: pytest.MonkeyPatch, model_dir) -> None:
+    with _client_with_model(monkeypatch, model_dir) as client:
         response = client.get("/ready")
         assert response.status_code == 200
         body = response.json()
@@ -92,8 +88,8 @@ def test_ready_with_model(monkeypatch: pytest.MonkeyPatch) -> None:
         assert body["model_loaded"] is True
 
 
-def test_ready_with_missing_model_dir(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MODEL_DIR", "artifacts/missing_model")
+def test_ready_with_missing_model_dir(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setenv("MODEL_DIR", str(tmp_path / "missing_model"))
     from app import main as main_module
 
     importlib.reload(main_module)

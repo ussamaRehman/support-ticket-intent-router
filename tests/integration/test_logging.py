@@ -1,15 +1,11 @@
 import importlib
 import json
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 
-def test_prediction_audit_log(monkeypatch: pytest.MonkeyPatch, caplog) -> None:
-    model_dir = Path("artifacts") / "model_0.1.0"
-    if not (model_dir / "model.pkl").exists():
-        pytest.skip("Model artifacts not found; run make train first.")
+def test_prediction_audit_log(monkeypatch: pytest.MonkeyPatch, caplog, model_dir) -> None:
     caplog.set_level("INFO")
     monkeypatch.setenv("MODEL_DIR", str(model_dir))
     from app import main as main_module
