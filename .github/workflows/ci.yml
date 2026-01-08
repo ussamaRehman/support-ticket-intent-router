@@ -22,7 +22,7 @@ jobs:
         run: |
           docker run -d --name ticket-router -p 8000:8000 ticket-router:dev
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            out="$(curl -sS http://localhost:8000/ready || true)"
+            out="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 2 http://localhost:8000/ready || true)"
             if echo "$out" | grep -q '"ready":[[:space:]]*true'; then
               echo "$out"
               docker rm -f ticket-router
