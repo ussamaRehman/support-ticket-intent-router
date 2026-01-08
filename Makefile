@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pip install-dev-pip train eval serve test lint format format-check ci docker-build docker-run docker-smoke docker-run-model docker-smoke-model
+.PHONY: install install-dev install-pip install-dev-pip train eval serve serve-model demo test lint format format-check ci docker-build docker-run docker-smoke docker-run-model docker-smoke-model
 
 PORT_CANDIDATES := 8000 8001 8002 8003 8004
 READY_PATH := /ready
@@ -25,6 +25,34 @@ eval:
 
 serve:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+serve-model:
+	@if [ -f artifacts/model_0.1.0/model.pkl ]; then \
+		MODEL_DIR=artifacts/model_0.1.0 $(MAKE) serve; \
+	else \
+		echo "Model artifacts not found. Run 'make train' first."; \
+		exit 1; \
+	fi
+
+demo:
+	@echo "Checking /ready..."; \
+	if curl -sS --connect-timeout 2 --max-time 2 http://localhost:8000/ready >/dev/null 2>&1; then \
+		curl -sS http://localhost:8000/ready; \
+	else \
+		echo "Service not reachable on :8000. Run 'make serve' (or 'make serve-model')."; \
+		exit 0; \
+	fi; \
+	echo ""; \
+	echo "Checking /predict..."; \
+	if curl -sS --connect-timeout 2 --max-time 2 http://localhost:8000/predict \
+		-H "Content-Type: application/json" \
+		-d '{"text":"Reset my password","top_k":3,"min_confidence":0.55}' >/dev/null 2>&1; then \
+		curl -sS http://localhost:8000/predict \
+			-H "Content-Type: application/json" \
+			-d '{"text":"Reset my password","top_k":3,"min_confidence":0.55}'; \
+	else \
+		echo "Predict not available (model may be missing). Run 'make train' and 'make serve-model'."; \
+	fi
 
 test:
 	uv run pytest -q
