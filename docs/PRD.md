@@ -2,7 +2,7 @@
 
 ## MVP definition (Phase 1 only)
 - Build a multiclass intent classifier for English, single-text inference.
-- Provide FastAPI endpoints: `POST /predict`, `POST /predict_batch`, `GET /health`.
+- Provide FastAPI endpoints: `POST /predict`, `POST /predict_batch`, `GET /health`, `GET /ready`.
 - Use TF-IDF + Logistic Regression baseline model.
 - Train/evaluate on a held-out test split and save required artifacts.
 - Generate evaluation reports and confusion matrix artifacts.
@@ -70,6 +70,7 @@
 - `make eval` writes `reports/metrics.json` and `reports/confusion_matrix.json`.
 - `MODEL_DIR=artifacts/model_0.1.0 make serve` boots the API.
 - `GET /health` returns `model_loaded=true` when artifacts are loaded.
+- `GET /ready` returns `200` when ready; if `MODEL_DIR` is set and the model is not loaded, return `503`.
 - `POST /predict` and `POST /predict_batch` return label, confidence, and top-k alternatives.
 - Requests return `503` when the model is not loaded.
 

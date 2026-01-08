@@ -50,6 +50,17 @@ pip install -e ".[dev]"
 ```
 
 ## Endpoints
+### Readiness vs health
+- `/ready` indicates the service is ready to accept traffic.
+- `/health` reports service status and whether a model is loaded.
+- If `MODEL_DIR` is set, `/ready` returns `503` until the model is loaded.
+- `X-Request-ID` (optional) is echoed in logs for traceability; if omitted, one is generated.
+
+### Ready
+```bash
+curl http://localhost:8000/ready
+```
+
 ### Health
 ```bash
 curl http://localhost:8000/health
@@ -134,6 +145,33 @@ make docker-smoke-model
 ```
 Notes:
 - Mounts local `./artifacts` read-only and uses ports 8000–8004.
+
+## cURL cookbook
+Ready:
+```bash
+curl -H "X-Request-ID: demo-req-1" http://localhost:8000/ready
+```
+
+Health:
+```bash
+curl -H "X-Request-ID: demo-req-2" http://localhost:8000/health
+```
+
+Predict:
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: demo-req-3" \
+  -d '{"text": "Reset my password", "top_k": 3, "min_confidence": 0.55}'
+```
+
+Predict batch:
+```bash
+curl -X POST http://localhost:8000/predict_batch \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: demo-req-4" \
+  -d '{"items": [{"id": "1", "text": "Reset my password"}, {"id": "2", "text": "Refund this charge"}], "top_k": 3, "min_confidence": 0.55}'
+```
 
 ## Logging
 Logs are emitted as JSON lines to stdout. Example:
