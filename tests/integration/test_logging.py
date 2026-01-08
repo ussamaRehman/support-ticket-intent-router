@@ -18,10 +18,15 @@ def test_prediction_audit_log(monkeypatch: pytest.MonkeyPatch, caplog, model_dir
         assert response.status_code == 200
 
     events = []
+    messages = []
     for record in caplog.records:
+        message = record.getMessage()
+        messages.append(message)
         try:
-            events.append(json.loads(record.getMessage()))
+            events.append(json.loads(message))
         except json.JSONDecodeError:
             continue
+    if not events:
+        pytest.fail(f"No JSON log entries found. Raw logs: {messages}")
     assert any(event.get("event") == "prediction" for event in events)
     assert any(event.get("request_id") == request_id for event in events)
