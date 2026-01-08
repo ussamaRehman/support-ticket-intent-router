@@ -28,5 +28,22 @@ def test_prediction_audit_log(monkeypatch: pytest.MonkeyPatch, caplog, model_dir
             continue
     if not events:
         pytest.fail(f"No JSON log entries found. Raw logs: {messages}")
-    assert any(event.get("event") == "prediction" for event in events)
-    assert any(event.get("request_id") == request_id for event in events)
+    prediction = next((event for event in events if event.get("event") == "prediction"), None)
+    assert prediction is not None
+    assert prediction.get("request_id") == request_id
+    for key in (
+        "timestamp",
+        "model_version",
+        "model_dir",
+        "min_confidence",
+        "top_k",
+        "label",
+        "confidence",
+        "needs_human",
+    ):
+        assert key in prediction
+
+    http_request = next((event for event in events if event.get("event") == "http_request"), None)
+    assert http_request is not None
+    for key in ("request_id", "method", "path", "status_code", "latency_ms", "timestamp"):
+        assert key in http_request
