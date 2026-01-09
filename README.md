@@ -44,6 +44,27 @@ Troubleshooting:
 - Cold-start curl failures can happen on attempt 1; the smoke targets retry automatically.
 - Ports 8000–8004 are used; free them with `lsof -i:8000 -sTCP:LISTEN`.
 
+## Environment variables
+- `MODEL_DIR` (default: unset): when set, the service loads a model from this path and `/ready` waits for it to load.
+- `LOG_LEVEL` (default: `INFO`): controls structured log verbosity.
+- `MAX_BODY_BYTES` (default: `262144`): max POST body size; requests above this return 413.
+- `PREDICT_TIMEOUT_MS` (default: `1500`): prediction timeout; requests exceeding this return 503.
+- `PORT` (default: `8000`): server port (used by `uvicorn` in `make serve`).
+
+## Project completion
+- FastAPI service with `/health`, `/ready`, `/predict`, `/predict_batch`.
+- Baseline TF-IDF + LogisticRegression pipeline with artifacts and eval reports.
+- Guardrails: `min_confidence` + `needs_human`, request size limit, prediction timeout.
+- Dockerized app + CI smoke tests using `/ready`.
+- Structured JSON logs with request_id and prediction audit events.
+- Integration tests use temporary models (no artifact dependency).
+
+## Phase checklist
+- [x] Phase 1: baseline model, artifacts, evaluation, API, docs.
+- [x] Phase 2: confidence guardrail + `needs_human`.
+- [x] Phase 3: Docker + CI + smoke tests.
+- [x] Phase 4: structured logs + readiness contract.
+
 ## Pip fallback (compatibility only)
 ```bash
 pip install -e ".[dev]"
