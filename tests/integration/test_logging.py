@@ -45,5 +45,14 @@ def test_prediction_audit_log(monkeypatch: pytest.MonkeyPatch, caplog, model_dir
 
     http_request = next((event for event in events if event.get("event") == "http_request"), None)
     assert http_request is not None
-    for key in ("request_id", "method", "path", "status_code", "latency_ms", "timestamp"):
+    for key in (
+        "request_id",
+        "method",
+        "path",
+        "status_code",
+        "latency_ms",
+        "timestamp",
+        "model_version",
+        "model_dir",
+    ):
         assert key in http_request

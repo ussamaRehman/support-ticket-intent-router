@@ -52,16 +52,16 @@ async def request_logging_middleware(request: Request, call_next):
         return response
     finally:
         latency_ms = (time.perf_counter() - start) * 1000
-        payload = {
-            "event": "http_request",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "request_id": request_id,
-            "method": request.method,
-            "path": request.url.path,
-            "status_code": status_code,
-            "latency_ms": round(latency_ms, 2),
-        }
-        logger.info(json.dumps(payload, ensure_ascii=False))
+        _log_event(
+            "http_request",
+            request_id=request_id,
+            method=request.method,
+            path=request.url.path,
+            status_code=status_code,
+            latency_ms=round(latency_ms, 2),
+            model_version=predictor.model_version,
+            model_dir=predictor.model_dir,
+        )
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -154,19 +154,17 @@ def _log_prediction(
     confidence: float,
     needs_human: bool,
 ) -> None:
-    payload = {
-        "event": "prediction",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "request_id": request_id,
-        "model_version": predictor.model_version,
-        "model_dir": predictor.model_dir,
-        "min_confidence": min_confidence,
-        "top_k": top_k,
-        "label": label,
-        "confidence": confidence,
-        "needs_human": needs_human,
-    }
-    logger.info(json.dumps(payload, ensure_ascii=False))
+    _log_event(
+        "prediction",
+        request_id=request_id,
+        model_version=predictor.model_version,
+        model_dir=predictor.model_dir,
+        min_confidence=min_confidence,
+        top_k=top_k,
+        label=label,
+        confidence=confidence,
+        needs_human=needs_human,
+    )
 
 
 def _log_prediction_batch(
@@ -176,15 +174,22 @@ def _log_prediction_batch(
     item_count: int,
     needs_human_count: int,
 ) -> None:
+    _log_event(
+        "prediction_batch",
+        request_id=request_id,
+        model_version=predictor.model_version,
+        model_dir=predictor.model_dir,
+        min_confidence=min_confidence,
+        top_k=top_k,
+        item_count=item_count,
+        needs_human_count=needs_human_count,
+    )
+
+
+def _log_event(event: str, **fields: object) -> None:
     payload = {
-        "event": "prediction_batch",
+        "event": event,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "request_id": request_id,
-        "model_version": predictor.model_version,
-        "model_dir": predictor.model_dir,
-        "min_confidence": min_confidence,
-        "top_k": top_k,
-        "item_count": item_count,
-        "needs_human_count": needs_human_count,
     }
+    payload.update(fields)
     logger.info(json.dumps(payload, ensure_ascii=False))
