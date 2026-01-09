@@ -16,6 +16,7 @@ from app.schemas import (
     PredictBatchResponse,
     PredictRequest,
     PredictResponse,
+    ReadyResponse,
 )
 from app.services.predictor import Predictor
 
@@ -74,7 +75,31 @@ def health() -> HealthResponse:
     )
 
 
-@app.get("/ready")
+@app.get(
+    "/ready",
+    response_model=ReadyResponse,
+    responses={
+        503: {
+            "model": ReadyResponse,
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "model_missing": {
+                            "summary": "Model not loaded",
+                            "value": {
+                                "status": "ok",
+                                "ready": False,
+                                "model_loaded": False,
+                                "model_dir": None,
+                                "model_version": None,
+                            },
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
 def ready() -> JSONResponse:
     model_loaded = predictor.loaded
     ready_state = True

@@ -55,6 +55,7 @@ pip install -e ".[dev]"
 - `/health` reports service status and whether a model is loaded.
 - If `MODEL_DIR` is set, `/ready` returns `503` until the model is loaded.
 - `X-Request-ID` (optional) is echoed in logs for traceability; if omitted, one is generated.
+- `/health` is stable for probes; `/ready` is stricter for traffic routing.
 
 ### Ready
 ```bash
