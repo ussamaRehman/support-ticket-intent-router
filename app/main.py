@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -48,6 +49,28 @@ async def request_logging_middleware(request: Request, call_next):
     start = time.perf_counter()
     status_code = 500
     try:
+        if request.method == "POST" and request.url.path in {"/predict", "/predict_batch"}:
+            max_bytes = settings.MAX_BODY_BYTES
+            content_length = request.headers.get("content-length")
+            if content_length:
+                try:
+                    if int(content_length) > max_bytes:
+                        response = JSONResponse(
+                            status_code=413, content={"detail": "Request body too large"}
+                        )
+                        status_code = response.status_code
+                        return response
+                except ValueError:
+                    content_length = None
+            if content_length is None:
+                body = await request.body()
+                if len(body) > max_bytes:
+                    response = JSONResponse(
+                        status_code=413, content={"detail": "Request body too large"}
+                    )
+                    status_code = response.status_code
+                    return response
+                request._body = body
         response = await call_next(request)
         status_code = response.status_code
         return response
@@ -121,10 +144,12 @@ def ready() -> JSONResponse:
 def predict(http_request: Request, request: PredictRequest) -> PredictResponse:
     if not predictor.loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    result = predictor.predict(
+    result = _predict_with_timeout(
         [request.text],
         top_k=request.top_k,
         min_confidence=request.min_confidence,
+        request_id=http_request.state.request_id,
+        path="/predict",
     )[0]
     _log_prediction(
         request_id=http_request.state.request_id,
@@ -146,10 +171,12 @@ def predict_batch(http_request: Request, request: PredictBatchRequest) -> Predic
     if not predictor.loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
     texts = [item.text for item in request.items]
-    results = predictor.predict(
+    results = _predict_with_timeout(
         texts,
         top_k=request.top_k,
         min_confidence=request.min_confidence,
+        request_id=http_request.state.request_id,
+        path="/predict_batch",
     )
     needs_human_count = sum(1 for result in results if result["needs_human"])
     _log_prediction_batch(
@@ -218,3 +245,33 @@ def _log_event(event: str, **fields: object) -> None:
     }
     payload.update(fields)
     logger.info(json.dumps(payload, ensure_ascii=False))
+
+
+def _predict_with_timeout(
+    texts: list[str],
+    top_k: int,
+    min_confidence: float,
+    request_id: str,
+    path: str,
+) -> list[dict[str, object]]:
+    timeout_ms = settings.PREDICT_TIMEOUT_MS
+    if timeout_ms <= 0:
+        return predictor.predict(texts, top_k=top_k, min_confidence=min_confidence)
+    timeout_seconds = timeout_ms / 1000
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            predictor.predict, texts, top_k=top_k, min_confidence=min_confidence
+        )
+        try:
+            return future.result(timeout=timeout_seconds)
+        except TimeoutError as exc:
+            future.cancel()
+            _log_event(
+                "prediction_timeout",
+                request_id=request_id,
+                path=path,
+                timeout_ms=timeout_ms,
+                model_version=predictor.model_version,
+                model_dir=predictor.model_dir,
+            )
+            raise HTTPException(status_code=503, detail="Prediction timed out") from exc
