@@ -148,6 +148,8 @@ class ReadyResponse(BaseModel):
     model_loaded: bool
     model_dir: Optional[str] = None
     model_version: Optional[str] = None
+    max_body_bytes: int
+    predict_timeout_ms: int
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -158,6 +160,8 @@ class ReadyResponse(BaseModel):
                     "model_loaded": False,
                     "model_dir": None,
                     "model_version": None,
+                    "max_body_bytes": 262144,
+                    "predict_timeout_ms": 1500,
                 }
             ]
         }

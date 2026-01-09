@@ -115,6 +115,8 @@ def health() -> HealthResponse:
                                 "model_loaded": False,
                                 "model_dir": None,
                                 "model_version": None,
+                                "max_body_bytes": 262144,
+                                "predict_timeout_ms": 1500,
                             },
                         }
                     }
@@ -136,6 +138,8 @@ def ready() -> JSONResponse:
         "model_loaded": model_loaded,
         "model_dir": predictor.model_dir,
         "model_version": predictor.model_version,
+        "max_body_bytes": settings.MAX_BODY_BYTES,
+        "predict_timeout_ms": settings.PREDICT_TIMEOUT_MS,
     }
     return JSONResponse(content=payload, status_code=status_code)
 

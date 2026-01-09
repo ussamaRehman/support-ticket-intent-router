@@ -77,6 +77,8 @@ def test_ready_without_model_dir(monkeypatch: pytest.MonkeyPatch) -> None:
         body = response.json()
         assert body["ready"] is True
         assert body["model_loaded"] is False
+        assert body["max_body_bytes"] == 262144
+        assert body["predict_timeout_ms"] == 1500
 
 
 def test_ready_with_model(monkeypatch: pytest.MonkeyPatch, model_dir) -> None:
@@ -86,6 +88,8 @@ def test_ready_with_model(monkeypatch: pytest.MonkeyPatch, model_dir) -> None:
         body = response.json()
         assert body["ready"] is True
         assert body["model_loaded"] is True
+        assert body["max_body_bytes"] == 262144
+        assert body["predict_timeout_ms"] == 1500
 
 
 def test_ready_with_missing_model_dir(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
@@ -98,3 +102,5 @@ def test_ready_with_missing_model_dir(monkeypatch: pytest.MonkeyPatch, tmp_path)
         assert response.status_code == 503
         body = response.json()
         assert body["ready"] is False
+        assert body["max_body_bytes"] == 262144
+        assert body["predict_timeout_ms"] == 1500
