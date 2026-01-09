@@ -24,7 +24,7 @@ eval:
 	uv run python -m training.eval_baseline
 
 serve:
-	uvicorn app.main:app --host 0.0.0.0 --port 8000
+	uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 serve-model:
 	@if [ -f artifacts/model_0.1.0/model.pkl ]; then \
