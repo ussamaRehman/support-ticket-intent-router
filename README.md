@@ -40,6 +40,52 @@ curl -X POST http://localhost:8000/predict \
   -d '{"text": "I need help with my invoice", "top_k": 3, "min_confidence": 0.55}'
 ```
 
+## For Clients (Upwork/Portfolio)
+### What this service does
+- Routes support tickets into intent labels using an ML model.
+- Adds production guardrails (min confidence -> needs_human, request-size limit, prediction timeout).
+- Exposes readiness + structured logs with request_id for safe operations.
+
+### Deliverables / What you get
+- FastAPI service with `/predict`, `/predict_batch`, `/health`, `/ready`.
+- Dockerfile + smoke tests (cold-start tolerant).
+- CI pipeline (format, lint, tests, docker build, readiness smoke).
+- Deterministic integration tests (tmp model fixture).
+- Clear operator knobs via env vars (see below).
+
+### 60-second quickstart (local + docker)
+Local:
+```bash
+uv venv
+source .venv/bin/activate
+make install-dev
+make train
+make serve-model
+curl http://localhost:8000/ready
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Reset my password", "top_k": 3, "min_confidence": 0.55}'
+```
+
+Expected response shape (short):
+`{"label":"...","confidence":0.12,"needs_human":false,...}`
+
+Docker:
+```bash
+make docker-build
+make docker-smoke
+curl http://localhost:8000/ready
+```
+
+Docker with model:
+```bash
+make docker-smoke-model
+```
+
+### Safety/ops notes
+- Key env vars: `MODEL_DIR`, `MAX_BODY_BYTES`, `PREDICT_TIMEOUT_MS`, `LOG_LEVEL`.
+- `/ready` is the traffic gate: if `MODEL_DIR` is set and the model is missing, it returns 503.
+
 Troubleshooting:
 - Docker Desktop must be running.
 - Cold-start curl failures can happen on attempt 1; the smoke targets retry automatically.
