@@ -18,10 +18,10 @@ install-dev-pip:
 	pip install -e ".[dev]"
 
 train:
-	python -m training.train_baseline
+	uv run python -m training.train_baseline
 
 eval:
-	python -m training.eval_baseline
+	uv run python -m training.eval_baseline
 
 serve:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000
